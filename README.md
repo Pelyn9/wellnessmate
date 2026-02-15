@@ -17,7 +17,9 @@ npm run start
 npm run build:web
 ```
 
-This exports static files into `dist/`, and `vercel.json` is configured to deploy that folder.
+This exports static files into `dist/`, adds PWA install files (`manifest.json`, `sw.js`), and `vercel.json` is configured to deploy that folder.
+
+After deploy, users can install it as an app from the browser ("Install app" / "Add to Home Screen").
 
 ## Android APK Build (EAS)
 
