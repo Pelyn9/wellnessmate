@@ -71,7 +71,7 @@ export default function App() {
           <SettingsScreen
             user={user}
             onProfile={() => setSettingsSubScreen("Profile")}
-            onLogout={() => auth.signOut().then(() => setUser(null))}
+            onLogoutSuccess={() => setUser(null)}
           />
         );
       default:

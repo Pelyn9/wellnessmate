@@ -1,11 +1,29 @@
-# Sample Snack app
+# WellnessMate
 
-Open the `App.js` file to start writing some code. You can preview the changes directly on your phone or tablet by scanning the **QR code** or use the iOS or Android emulators. When you're done, click **Save** and share the link!
+Expo React Native app with Firebase auth/data, deployable to:
+- Vercel (web export)
+- EAS Build (Android APK)
 
-When you're ready to see everything that Expo provides (or if you want to use your own editor) you can **Download** your project and use it with [expo cli](https://docs.expo.dev/get-started/installation/#expo-cli)).
+## Local Development
 
-All projects created in Snack are publicly available, so you can easily share the link to this project via link, or embed it on a web page with the `<>` button.
+```bash
+npm install
+npm run start
+```
 
-If you're having problems, you can tweet to us [@expo](https://twitter.com/expo) or ask in our [forums](https://forums.expo.dev/c/expo-dev-tools/61) or [Discord](https://chat.expo.dev/).
+## Web Build (Vercel target)
 
-Snack is Open Source. You can find the code on the [GitHub repo](https://github.com/expo/snack).
+```bash
+npm run build:web
+```
+
+This exports static files into `dist/`, and `vercel.json` is configured to deploy that folder.
+
+## Android APK Build (EAS)
+
+```bash
+npx eas-cli login
+npm run build:apk
+```
+
+`eas.json` includes a `preview` profile that outputs an APK and a `production` profile for app bundle builds.

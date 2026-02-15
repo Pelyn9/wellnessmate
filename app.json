@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "wellnessmate",
-    "slug": "snack-3ed05b3d-5206-44ae-9367-f565a8fd3b7a",
+    "name": "WellnessMate",
+    "slug": "wellnessmate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,7 +20,9 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.peejaymarcoapale.wellnessmate",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"

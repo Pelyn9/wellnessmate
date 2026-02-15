@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     right: 15,
     top: 15,
   },
-  button: { width: "325", backgroundColor: "#4CAF50", padding: 15, borderRadius: 12, marginTop: 15, alignSelf: "center" },
+  button: { width: "100%", backgroundColor: "#4CAF50", padding: 15, borderRadius: 12, marginTop: 15, alignSelf: "center" },
   buttonText: { color: "#fff", fontWeight: "bold", textAlign: "center" },
   registerText: { color: "#4CAF50", fontWeight: "bold", marginTop: 15 },
 });
