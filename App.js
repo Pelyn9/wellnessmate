@@ -5,6 +5,7 @@ import RegisterScreen from "./components/RegisterScreen";
 import Dashboard from "./components/Dashboard";
 import WorkoutScreen from "./components/WorkoutScreen";
 import DietScreen from "./components/DietScreen";
+import MusicScreen from "./components/MusicScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import ProfileScreen from "./components/ProfileScreen";
 import BottomNav from "./components/BottomNav";
@@ -115,6 +116,8 @@ export default function App() {
         return <WorkoutScreen theme={theme} />;
       case "Diet":
         return <DietScreen theme={theme} />;
+      case "Music":
+        return <MusicScreen theme={theme} />;
       case "Settings":
         if (settingsSubScreen === "Profile") {
           return <ProfileScreen goBack={() => setSettingsSubScreen(null)} theme={theme} />;

@@ -10,6 +10,7 @@ export default function BottomNav({ setScreen, active, theme }) {
     { name: "Dashboard", icon: "home-outline" },
     { name: "Workout", icon: "barbell-outline" },
     { name: "Diet", icon: "restaurant-outline" },
+    { name: "Music", icon: "musical-notes-outline" },
     { name: "Settings", icon: "settings-outline" },
   ];
 

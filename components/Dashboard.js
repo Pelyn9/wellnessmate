@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { auth, firestore } from "./firebaseConfig";
+import AppLogo from "./AppLogo";
 import { buildShadow, daysOfWeek } from "./theme";
 
 const tips = [
@@ -169,6 +170,7 @@ export default function Dashboard({ theme }) {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={[styles.contentWrap, { maxWidth: isDesktop ? 1040 : 720 }]}>
           <View style={[styles.hero, { backgroundColor: theme.colors.surface }, buildShadow(theme, 8)]}>
+            <AppLogo theme={theme} size={32} showTagline={false} align="left" style={styles.heroBrand} />
             <Text style={[styles.heroTitle, { color: theme.colors.text }]}>
               Welcome back, {userProfile?.name || "Athlete"}
             </Text>
@@ -321,6 +323,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 18,
     marginBottom: 14,
+  },
+  heroBrand: {
+    marginBottom: 8,
   },
   heroTitle: {
     fontSize: 23,

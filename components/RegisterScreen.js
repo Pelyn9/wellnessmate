@@ -15,6 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { auth, firestore } from "./firebaseConfig";
 import AnimatedButton from "./AnimatedButton";
+import AppLogo from "./AppLogo";
 
 const totalSteps = 4;
 
@@ -127,6 +128,7 @@ export default function RegisterScreen({ onRegister, onBack, theme, onToggleThem
           keyboardShouldPersistTaps="handled"
         >
           <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+            <AppLogo theme={theme} size={44} showTagline={false} style={styles.logoWrap} />
             <Text style={[styles.stepText, { color: theme.colors.primary }]}>
               Step {step} of {totalSteps}
             </Text>
@@ -340,6 +342,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     padding: 20,
+  },
+  logoWrap: {
+    marginBottom: 8,
   },
   stepText: {
     fontSize: 13,

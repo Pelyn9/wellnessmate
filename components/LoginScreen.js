@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { auth } from "./firebaseConfig";
 import AnimatedButton from "./AnimatedButton";
+import AppLogo from "./AppLogo";
 
 export default function LoginScreen({ onLogin, onRegister, theme, onToggleTheme }) {
   const [email, setEmail] = useState("");
@@ -61,9 +62,7 @@ export default function LoginScreen({ onLogin, onRegister, theme, onToggleTheme 
         </View>
 
         <View style={[styles.card, { backgroundColor: theme.colors.surface, maxWidth: wide ? 460 : 420 }]}>
-          <View style={[styles.logoCircle, { backgroundColor: theme.colors.primarySoft }]}>
-            <Ionicons name="leaf-outline" size={28} color={theme.colors.primary} />
-          </View>
+          <AppLogo theme={theme} size={48} />
 
           <Text style={[styles.title, { color: theme.colors.text }]}>Welcome Back</Text>
           <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
@@ -163,16 +162,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
   },
-  logoCircle: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-    alignSelf: "center",
-  },
   title: {
+    marginTop: 4,
     fontSize: 29,
     fontWeight: "800",
     textAlign: "center",
