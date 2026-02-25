@@ -1,105 +1,236 @@
 import React, { useState } from "react";
-import { View, TextInput, Text, StyleSheet, Image, Alert, TouchableOpacity } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { auth } from "./firebaseConfig";
 import AnimatedButton from "./AnimatedButton";
 
-export default function LoginScreen({ onLogin, onRegister }) {
+export default function LoginScreen({ onLogin, onRegister, theme, onToggleTheme }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // false = hidden
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
 
-  const handleLogin = () => {
-    if (!email || !password) return Alert.alert("Error", "Fill all fields");
-    auth
-      .signInWithEmailAndPassword(email, password)
-      .then((res) => onLogin(res.user))
-      .catch((err) => Alert.alert("Login Failed", err.message));
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Missing fields", "Please enter both email and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await auth.signInWithEmailAndPassword(email.trim(), password);
+      onLogin(result.user);
+    } catch (error) {
+      Alert.alert("Login failed", error?.message || "Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Image
-        source={{ uri: "https://cdn-icons-png.flaticon.com/512/2966/2966481.png" }}
-        style={styles.logo}
-      />
-      <Text style={styles.title}>WellnessMate</Text>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.bgBubbleTop, { backgroundColor: theme.colors.primarySoft }]} />
+      <View style={[styles.bgBubbleBottom, { backgroundColor: theme.colors.surfaceMuted }]} />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#bbb"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
+        <View style={styles.themeButtonWrap}>
+          <TouchableOpacity
+            onPress={onToggleTheme}
+            style={[styles.themeBtn, { backgroundColor: theme.colors.surface }]}
+            activeOpacity={0.9}
+          >
+            <Ionicons
+              name={theme.isDark ? "sunny-outline" : "moon-outline"}
+              size={18}
+              color={theme.colors.text}
+            />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.passwordWrapper}>
-        <TextInput
-          style={styles.inputPassword}
-          placeholder="Password"
-          placeholderTextColor="#bbb"
-          secureTextEntry={!showPassword}
-          value={password}
-          onChangeText={setPassword}
-        />
-        <TouchableOpacity
-          style={styles.showHideBtn}
-          onPress={() => setShowPassword(!showPassword)}
-        >
-          <Text style={{ color: "#4CAF50", fontWeight: "bold" }}>
-            {showPassword ? "Hide" : "Show"}
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, maxWidth: wide ? 460 : 420 }]}>
+          <View style={[styles.logoCircle, { backgroundColor: theme.colors.primarySoft }]}>
+            <Ionicons name="leaf-outline" size={28} color={theme.colors.primary} />
+          </View>
+
+          <Text style={[styles.title, { color: theme.colors.text }]}>Welcome Back</Text>
+          <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
+            Sign in to continue your fitness and nutrition tracking.
           </Text>
-        </TouchableOpacity>
-      </View>
 
-      <AnimatedButton style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
-      </AnimatedButton>
+          <FieldLabel text="Email" theme={theme} />
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.colors.input, color: theme.colors.text }]}
+            placeholder="you@example.com"
+            placeholderTextColor={theme.colors.placeholder}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
 
-      <Text style={styles.registerText} onPress={onRegister}>
-        Don't have an account? Register
-      </Text>
-    </View>
+          <FieldLabel text="Password" theme={theme} />
+          <View style={[styles.passwordWrap, { backgroundColor: theme.colors.input }]}>
+            <TextInput
+              style={[styles.passwordInput, { color: theme.colors.text }]}
+              placeholder="Password"
+              placeholderTextColor={theme.colors.placeholder}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)} style={styles.eyeBtn}>
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color={theme.colors.textMuted}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <AnimatedButton
+            style={[styles.submitBtn, { backgroundColor: theme.colors.primary }, loading && { opacity: 0.7 }]}
+            onPress={handleLogin}
+          >
+            <Text style={styles.submitText}>{loading ? "Signing In..." : "Sign In"}</Text>
+          </AnimatedButton>
+
+          <TouchableOpacity onPress={onRegister} style={styles.footerLink}>
+            <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>No account yet?</Text>
+            <Text style={[styles.footerAction, { color: theme.colors.primary }]}> Create one</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
+function FieldLabel({ text, theme }) {
+  return <Text style={[styles.label, { color: theme.colors.textMuted }]}>{text}</Text>;
+}
+
 const styles = StyleSheet.create({
-  container: {
+  safe: { flex: 1 },
+  flex: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#121212",
+    paddingHorizontal: 16,
+  },
+  bgBubbleTop: {
+    position: "absolute",
+    width: 260,
+    height: 260,
+    borderRadius: 150,
+    top: -80,
+    left: -60,
+  },
+  bgBubbleBottom: {
+    position: "absolute",
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    bottom: -100,
+    right: -90,
+  },
+  themeButtonWrap: {
+    position: "absolute",
+    top: Platform.OS === "android" ? 30 : 14,
+    right: 16,
+    zIndex: 2,
+  },
+  themeBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  card: {
+    width: "100%",
+    borderRadius: 20,
     padding: 20,
   },
-  logo: { width: 100, height: 100, marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: "bold", color: "#4CAF50", marginBottom: 30 },
+  logoCircle: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    alignSelf: "center",
+  },
+  title: {
+    fontSize: 29,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 8,
+    marginBottom: 6,
+  },
   input: {
-    width: "100%",
-    backgroundColor: "#1E1E1E",
-    color: "#fff",
-    padding: 15,
+    borderRadius: 11,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 14,
+  },
+  passwordWrap: {
+    borderRadius: 11,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 14,
+  },
+  eyeBtn: {
+    paddingHorizontal: 12,
+  },
+  submitBtn: {
+    marginTop: 16,
     borderRadius: 12,
-    marginVertical: 8,
+    paddingVertical: 13,
+    alignItems: "center",
   },
-  passwordWrapper: {
-    width: "100%",
-    position: "relative",
-    marginVertical: 8,
-  },
-  inputPassword: {
-    width: "100%",
-    backgroundColor: "#1E1E1E",
+  submitText: {
     color: "#fff",
-    padding: 15,
-    borderRadius: 12,
-    paddingRight: 70, // space for the Show/Hide button
+    fontWeight: "700",
+    fontSize: 15,
   },
-  showHideBtn: {
-    position: "absolute",
-    right: 15,
-    top: 15,
+  footerLink: {
+    marginTop: 14,
+    alignSelf: "center",
+    flexDirection: "row",
   },
-  button: { width: "100%", backgroundColor: "#4CAF50", padding: 15, borderRadius: 12, marginTop: 15, alignSelf: "center" },
-  buttonText: { color: "#fff", fontWeight: "bold", textAlign: "center" },
-  registerText: { color: "#4CAF50", fontWeight: "bold", marginTop: 15 },
+  footerText: {
+    fontSize: 13,
+  },
+  footerAction: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
 });

@@ -1,125 +1,239 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
   Image,
   Modal,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { firestore, auth } from "./firebaseConfig";
+import { auth, firestore } from "./firebaseConfig";
+import { buildShadow, themeModes } from "./theme";
 
-export default function SettingsScreen({ onProfile, onLogoutSuccess }) {
-  const [user, setUser] = useState({ name: "", photo: null });
+export default function SettingsScreen({
+  onProfile,
+  onLogoutSuccess,
+  onThemeChange,
+  currentThemeMode,
+  theme,
+}) {
+  const [profile, setProfile] = useState({ name: "", photo: null, email: "" });
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
+
   const uid = auth.currentUser?.uid;
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 900;
 
   useEffect(() => {
     if (!uid) return;
-
     const unsubscribe = firestore
       .collection("users")
       .doc(uid)
       .onSnapshot((doc) => {
-        if (doc.exists) {
-          setUser(doc.data());
-        }
+        if (!doc.exists) return;
+        const data = doc.data();
+        setProfile({
+          name: data.name || "",
+          photo: data.photo || null,
+          email: data.email || auth.currentUser?.email || "",
+          hydrationGoal: Number(data.hydrationGoal || 8),
+          notificationsEnabled: data.notificationsEnabled !== false,
+        });
       });
-
     return () => unsubscribe();
   }, [uid]);
+
+  const updateUserDoc = async (nextData) => {
+    if (!uid || saving) return;
+    setSaving(true);
+    try {
+      await firestore.collection("users").doc(uid).set(nextData, { merge: true });
+    } catch (error) {
+      console.log("Settings update failed:", error?.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleTheme = () => {
+    const next = currentThemeMode === themeModes.light ? themeModes.dark : themeModes.light;
+    onThemeChange(next);
+  };
+
+  const handleToggleNotifications = () => {
+    const nextValue = !profile.notificationsEnabled;
+    setProfile((prev) => ({ ...prev, notificationsEnabled: nextValue }));
+    updateUserDoc({ notificationsEnabled: nextValue });
+  };
+
+  const handleHydrationGoalChange = (delta) => {
+    const current = Number(profile.hydrationGoal || 8);
+    const next = Math.max(4, Math.min(15, current + delta));
+    setProfile((prev) => ({ ...prev, hydrationGoal: next }));
+    updateUserDoc({ hydrationGoal: next });
+  };
 
   const handleLogout = async () => {
     try {
       await auth.signOut();
       setLogoutModalVisible(false);
-      if (onLogoutSuccess) onLogoutSuccess();
-    } catch (err) {
-      console.error("Logout error:", err);
-      alert("Failed to logout. Try again.");
+      onLogoutSuccess?.();
+    } catch (error) {
+      console.log("Logout failed:", error?.message);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Profile Header */}
-      <View style={styles.profileHeader}>
-        {user.photo ? (
-          <Image source={{ uri: user.photo }} style={styles.profilePic} />
-        ) : (
-          <Ionicons name="person-circle-outline" size={100} color="#4CAF50" />
-        )}
-        <Text style={styles.profileName}>{user.name || "Your Name"}</Text>
+    <ScrollView
+      contentContainerStyle={[styles.scroll, { backgroundColor: theme.colors.background }]}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[styles.contentWrap, { maxWidth: isDesktop ? 1020 : 760 }]}>
+        <View style={[styles.hero, { backgroundColor: theme.colors.surface }, buildShadow(theme, 8)]}>
+          <View style={styles.profileRow}>
+            {profile.photo ? (
+              <Image source={{ uri: profile.photo }} style={styles.profilePic} />
+            ) : (
+              <View style={[styles.profileFallback, { backgroundColor: theme.colors.primarySoft }]}>
+                <Ionicons name="person-outline" size={28} color={theme.colors.primary} />
+              </View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.name, { color: theme.colors.text }]}>{profile.name || "Wellness User"}</Text>
+              <Text style={[styles.email, { color: theme.colors.textMuted }]}>
+                {profile.email || auth.currentUser?.email || "No email"}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={onProfile} style={[styles.inlineBtn, { borderColor: theme.colors.border }]}>
+              <Ionicons name="create-outline" size={17} color={theme.colors.primary} />
+              <Text style={[styles.inlineBtnText, { color: theme.colors.primary }]}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>Appearance</Text>
+        <View style={[styles.settingCard, { backgroundColor: theme.colors.surface }, buildShadow(theme, 5)]}>
+          <View style={styles.settingLeft}>
+            <Ionicons
+              name={currentThemeMode === themeModes.dark ? "moon-outline" : "sunny-outline"}
+              size={21}
+              color={theme.colors.primary}
+            />
+            <View style={styles.settingTextWrap}>
+              <Text style={[styles.settingTitle, { color: theme.colors.text }]}>Theme Mode</Text>
+              <Text style={[styles.settingSub, { color: theme.colors.textMuted }]}>
+                {currentThemeMode === themeModes.dark ? "Dark Mode" : "Light Mode"}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={currentThemeMode === themeModes.dark}
+            onValueChange={toggleTheme}
+            thumbColor={currentThemeMode === themeModes.dark ? theme.colors.primary : "#f1f5f9"}
+            trackColor={{ true: theme.colors.primarySoft, false: theme.colors.border }}
+          />
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>Preferences</Text>
+        <View style={[styles.settingCard, { backgroundColor: theme.colors.surface }, buildShadow(theme, 5)]}>
+          <View style={styles.settingLeft}>
+            <Ionicons name="notifications-outline" size={21} color={theme.colors.accent} />
+            <View style={styles.settingTextWrap}>
+              <Text style={[styles.settingTitle, { color: theme.colors.text }]}>Daily Reminders</Text>
+              <Text style={[styles.settingSub, { color: theme.colors.textMuted }]}>
+                Notification nudges for workouts and meals
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={!!profile.notificationsEnabled}
+            onValueChange={handleToggleNotifications}
+            thumbColor={profile.notificationsEnabled ? theme.colors.accent : "#f1f5f9"}
+            trackColor={{ true: theme.colors.primarySoft, false: theme.colors.border }}
+          />
+        </View>
+
+        <View style={[styles.settingCard, { backgroundColor: theme.colors.surface }, buildShadow(theme, 5)]}>
+          <View style={styles.settingLeft}>
+            <Ionicons name="water-outline" size={21} color={theme.colors.warning} />
+            <View style={styles.settingTextWrap}>
+              <Text style={[styles.settingTitle, { color: theme.colors.text }]}>Daily Hydration Goal</Text>
+              <Text style={[styles.settingSub, { color: theme.colors.textMuted }]}>
+                Set target glasses per day (4 to 15)
+              </Text>
+            </View>
+          </View>
+          <View style={styles.goalControls}>
+            <TouchableOpacity
+              style={[styles.goalBtn, { borderColor: theme.colors.border }]}
+              onPress={() => handleHydrationGoalChange(-1)}
+            >
+              <Ionicons name="remove" size={18} color={theme.colors.text} />
+            </TouchableOpacity>
+            <Text style={[styles.goalValue, { color: theme.colors.text }]}>
+              {profile.hydrationGoal || 8}
+            </Text>
+            <TouchableOpacity
+              style={[styles.goalBtn, { borderColor: theme.colors.border }]}
+              onPress={() => handleHydrationGoalChange(1)}
+            >
+              <Ionicons name="add" size={18} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>Support</Text>
+        <View style={[styles.settingCard, { backgroundColor: theme.colors.surface }, buildShadow(theme, 5)]}>
+          <View style={styles.settingLeft}>
+            <Ionicons name="help-circle-outline" size={21} color={theme.colors.success} />
+            <View style={styles.settingTextWrap}>
+              <Text style={[styles.settingTitle, { color: theme.colors.text }]}>Coaching Tip</Text>
+              <Text style={[styles.settingSub, { color: theme.colors.textMuted }]}>
+                Keep workouts realistic for weekdays, then progress weekly.
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.logoutCard, { backgroundColor: theme.colors.surface }, buildShadow(theme, 5)]}
+          onPress={() => setLogoutModalVisible(true)}
+        >
+          <Ionicons name="log-out-outline" size={21} color={theme.colors.danger} />
+          <Text style={[styles.logoutText, { color: theme.colors.danger }]}>Sign Out</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Account Section */}
-      <Text style={styles.sectionTitle}>Account</Text>
-      <TouchableOpacity style={styles.card} onPress={onProfile}>
-        <View style={styles.cardLeft}>
-          <Ionicons name="pencil-outline" size={24} color="#4CAF50" />
-          <Text style={styles.cardText}>Edit Profile</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color="#999" />
-      </TouchableOpacity>
-
-      {/* Preferences Section */}
-      <Text style={styles.sectionTitle}>Preferences</Text>
-      <TouchableOpacity style={styles.card}>
-        <Ionicons name="notifications-outline" size={24} color="#4CAF50" />
-        <Text style={styles.cardText}>Notifications</Text>
-        <Ionicons name="chevron-forward" size={20} color="#999" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.card}>
-        <Ionicons name="cafe-outline" size={24} color="#4CAF50" />
-        <Text style={styles.cardText}>Diet Preferences</Text>
-        <Ionicons name="chevron-forward" size={20} color="#999" />
-      </TouchableOpacity>
-
-      {/* Support Section */}
-      <Text style={styles.sectionTitle}>Support</Text>
-      <TouchableOpacity style={styles.card}>
-        <Ionicons name="help-circle-outline" size={24} color="#4CAF50" />
-        <Text style={styles.cardText}>Help & Support</Text>
-        <Ionicons name="chevron-forward" size={20} color="#999" />
-      </TouchableOpacity>
-
-      {/* Logout */}
-      <TouchableOpacity
-        style={[styles.card, styles.logout]}
-        onPress={() => setLogoutModalVisible(true)}
-      >
-        <Ionicons name="log-out-outline" size={24} color="red" />
-        <Text style={[styles.cardText, { color: "red" }]}>Logout</Text>
-      </TouchableOpacity>
-
-      {/* Custom Logout Modal */}
       <Modal visible={logoutModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.colors.overlay }]}>
+          <View style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
             <Ionicons
               name="log-out-outline"
-              size={40}
-              color="red"
-              style={{ alignSelf: "center", marginBottom: 10 }}
+              size={36}
+              color={theme.colors.danger}
+              style={{ alignSelf: "center", marginBottom: 6 }}
             />
-            <Text style={styles.modalTitle}>Confirm Logout</Text>
-            <Text style={styles.modalMessage}>
-              Are you sure you want to logout?
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Sign out of WellnessMate?</Text>
+            <Text style={[styles.modalMessage, { color: theme.colors.textMuted }]}>
+              You can log in again anytime with the same account.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: "#4CAF50" }]}
+                style={[styles.modalBtn, { backgroundColor: theme.colors.surfaceMuted }]}
                 onPress={() => setLogoutModalVisible(false)}
               >
-                <Text style={styles.modalButtonText}>No</Text>
+                <Text style={[styles.modalBtnText, { color: theme.colors.text }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: "#f87171" }]}
+                style={[styles.modalBtn, { backgroundColor: theme.colors.danger }]}
                 onPress={handleLogout}
               >
-                <Text style={styles.modalButtonText}>Yes</Text>
+                <Text style={styles.modalBtnText}>Sign Out</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -130,96 +244,162 @@ export default function SettingsScreen({ onProfile, onLogoutSuccess }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flexGrow: 1,
-    backgroundColor: "#0f172a",
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 20,
   },
-  profileHeader: {
+  contentWrap: {
+    width: "100%",
+    alignSelf: "center",
+  },
+  hero: {
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 10,
+  },
+  profileRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 40,
-    marginBottom: 30,
   },
   profilePic: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    marginRight: 12,
   },
-  profileName: {
-    color: "#fff",
+  profileFallback: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  name: {
     fontSize: 20,
     fontWeight: "700",
-    textAlign: "center",
+  },
+  email: {
+    marginTop: 2,
+    fontSize: 13,
+  },
+  inlineBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  inlineBtnText: {
+    marginLeft: 6,
+    fontWeight: "700",
+    fontSize: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#94a3b8",
-    marginTop: 20,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  settingCard: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
   },
-  card: {
+  settingLeft: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    padding: 15,
-    borderRadius: 16,
-    marginBottom: 12,
-    justifyContent: "space-between",
+    flex: 1,
+    paddingRight: 8,
   },
-  cardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  cardText: {
+  settingTextWrap: {
     marginLeft: 10,
-    fontSize: 16,
-    color: "#f8fafc",
+    flex: 1,
   },
-  logout: {
-    marginTop: 20,
+  settingTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  settingSub: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  goalControls: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  goalBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  goalValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginHorizontal: 10,
+  },
+  logoutCard: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  logoutText: {
+    marginLeft: 10,
+    fontSize: 15,
+    fontWeight: "700",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
+    paddingHorizontal: 22,
   },
-  modalContent: {
-    width: "80%",
-    backgroundColor: "#1C1C1C",
-    borderRadius: 20,
-    padding: 25,
-    alignItems: "center",
+  modalCard: {
+    width: "100%",
+    borderRadius: 18,
+    padding: 18,
   },
   modalTitle: {
-    color: "#fff",
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
-    marginBottom: 10,
+    textAlign: "center",
+    marginBottom: 6,
   },
   modalMessage: {
-    color: "#bbb",
-    fontSize: 16,
     textAlign: "center",
-    marginBottom: 25,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 16,
   },
   modalButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "100%",
   },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 5,
+  modalBtn: {
+    width: "48.5%",
+    borderRadius: 11,
     paddingVertical: 12,
-    borderRadius: 25,
     alignItems: "center",
   },
-  modalButtonText: {
+  modalBtnText: {
     color: "#fff",
+    fontSize: 14,
     fontWeight: "700",
-    fontSize: 16,
   },
 });

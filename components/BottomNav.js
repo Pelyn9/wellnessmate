@@ -1,8 +1,11 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // optional icons
+import { Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { buildShadow } from "./theme";
 
-export default function BottomNav({ setScreen, active }) {
+export default function BottomNav({ setScreen, active, theme }) {
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
   const tabs = [
     { name: "Dashboard", icon: "home-outline" },
     { name: "Workout", icon: "barbell-outline" },
@@ -11,54 +14,93 @@ export default function BottomNav({ setScreen, active }) {
   ];
 
   return (
-    <View style={styles.nav}>
-      {tabs.map((tab) => (
-        <TouchableOpacity
-          key={tab.name}
-          onPress={() => setScreen(tab.name)}
-          style={[styles.tab, active === tab.name && styles.activeTab]}
-        >
-          <Ionicons
-            name={tab.icon}
-            size={24}
-            color={active === tab.name ? "#fff" : "#bbb"}
-          />
-          <Text style={[styles.label, active === tab.name && styles.activeLabel]}>
-            {tab.name}
-          </Text>
-        </TouchableOpacity>
-      ))}
+    <View
+      style={[
+        styles.wrapper,
+        {
+          backgroundColor: theme.colors.nav,
+          borderTopColor: theme.colors.border,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.nav,
+          wide && styles.navWide,
+          Platform.OS === "web" && buildShadow(theme, 0),
+        ]}
+      >
+        {tabs.map((tab) => {
+          const isActive = active === tab.name;
+          return (
+            <TouchableOpacity
+              key={tab.name}
+              onPress={() => setScreen(tab.name)}
+              style={[
+                styles.tab,
+                wide && styles.tabWide,
+                isActive && {
+                  backgroundColor: theme.colors.primarySoft,
+                },
+              ]}
+              activeOpacity={0.85}
+            >
+              <Ionicons
+                name={tab.icon}
+                size={22}
+                color={isActive ? theme.colors.primary : theme.colors.textMuted}
+              />
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: isActive ? theme.colors.primary : theme.colors.textMuted,
+                  },
+                ]}
+              >
+                {tab.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    borderTopWidth: 1,
+    paddingHorizontal: 12,
+    paddingBottom: Platform.OS === "ios" ? 12 : 8,
+    paddingTop: 8,
+  },
   nav: {
     flexDirection: "row",
     justifyContent: "space-around",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: "#0f172a",
-    // Removed border radius for straight edges
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: -3 },
-    shadowRadius: 5,
-    elevation: 10,
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 1040,
+  },
+  navWide: {
+    justifyContent: "center",
   },
   tab: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    minWidth: 72,
+    marginHorizontal: 2,
+  },
+  tabWide: {
+    minWidth: 120,
+    marginHorizontal: 6,
   },
   label: {
-    color: "#bbb",
-    fontSize: 10,
+    fontSize: 11,
     marginTop: 2,
-  },
-  activeLabel: {
-    color: "#4CAF50",
     fontWeight: "600",
   },
 });
